@@ -1,47 +1,43 @@
+let accessToken = null;
+const clientID = "8ed9e434e8634706bc3356617bf4a100";
+const redirectURL = 'http://localhost:3000/';
+//const redirectURL = "https://thats_my_jam.surge.sh";
 
+export const Spotify = {
 
-export class Spotify {
-
-    constructor() {
-
-        this.accessToken = this.getAccessToken();
-        this.clientID = "8ed9e434e8634706bc3356617bf4a100";
-        this.redirectURL = 'http://localhost:3000/';
-        //redirectURL: "https://thats_my_jam.surge.sh"
-
-        this.getAccessToken = this.getAccessToken.bind(this);
-        this.search = this.search.bind(this);
-        this.savePlaylist = this.savePlaylist(this);
-    }
-
-    getAccessToken() {
-        if (this.accessToken !== undefined && this.accessToken !== '') {
-            return this.accessToken;
+    getAccessToken: function() {
+        if (accessToken !== null) {
+            return accessToken;
 
         } else if (window.location.href.includes('access_token=')) {
-            this.accessToken = window.location.href.match(/access_token=([^&]*)/)[0];
+            accessToken = window.location.href.match(/access_token=([^&]*)/)[0];
             let expirationTime = window.location.href.match(/expires_in=([^&]*)/)[0];
 
-            window.setTimeout(() => this.accessToken = '', expirationTime * 1000);
-            window.history.pushState('Access Token', null, '/');
+            if (accessToken !== null && expirationTime !== null) {
+                accessToken = accessToken.split('=')[1];
+                expirationTime = expirationTime.split('=')[1];
+
+                window.setTimeout(() => accessToken = '', expirationTime * 1000);
+                window.history.pushState('Access Token', null, '/');
+            }
 
         } else {
             window.location.href = "https://accounts.spotify.com/authorize" +
-                `?client_id=${this.clientID}` +
-                `&redirect_uri=${this.redirectURL}` +
+                `?client_id=${clientID}` +
+                `&redirect_uri=${redirectURL}` +
                 "&scope=playlist-modify-public" +
                 "&response_type=token";
         }
-    }
+    },
 
-    async search(searchTerm) {
+    search: function(searchTerm) {
         try {
             const endpoint = `https://api.spotify.com/v1/search?type=track&q=${searchTerm}`;
-            const requestSearchResults = await fetch(endpoint, {
-                headers: {'Authorization': `Bearer ${this.getAccessToken()}`}
+            const requestSearchResults = fetch(endpoint, {
+                headers: { 'Authorization': `Bearer ${this.getAccessToken}` }
             });
             if (requestSearchResults.ok) {
-                const jsonResponse = await requestSearchResults.json();
+                const jsonResponse = requestSearchResults.json();
                 if (jsonResponse.tracks !== undefined) {
                     return jsonResponse.tracks.map(track => {
                         return {
@@ -60,19 +56,20 @@ export class Spotify {
         catch (e) {
             console.log(e);
         }
-    }
+    },
 
-    async savePlaylist(playlistName, trackURIs) {
+    savePlaylist: async function(playlistName, trackURIs) {
         if (playlistName === '' || (trackURIs === undefined || trackURIs.length === 0)) {
             return;
         }
 
+        const header = { 'Authorization': `Bearer ${this.getAccessToken}` };
         let userID = '';
         let playlistID = '';
 
         try {
             const requestID = await fetch(`https://api.spotify.com/v1/me`, {
-                headers: {'Authorization': `Bearer ${this.getAccessToken()}`},
+                headers: header
             });
             if (requestID.ok) {
                 const jsonIDResponse = await requestID.json();
@@ -87,7 +84,7 @@ export class Spotify {
         try {
             const postPlaylist = await fetch(`https://api.spotify.com/v1/users/${userID}/playlists`, {
                 method: 'POST',
-                headers: {'Authorization': `Bearer ${this.getAccessToken()}`},
+                headers: header,
                 body: {
                     'name': playlistName,
                     'description': '',
@@ -107,10 +104,8 @@ export class Spotify {
         try {
             const postTracks = await fetch(`https://api.spotify.com/v1/users/${userID}/playlists/${playlistID}/tracks`, {
                 method: 'POST',
-                headers: {'Authorization': `Bearer ${this.getAccessToken()}`},
-                body: {
-                    uris: trackURIs
-                }
+                headers: header,
+                body: { uris: trackURIs }
             });
             if (postTracks.ok) {
                 return;
@@ -121,8 +116,4 @@ export class Spotify {
             console.log(e);
         }
     }
-}
-
-
-
-
+};

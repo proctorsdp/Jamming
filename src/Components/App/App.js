@@ -5,6 +5,7 @@ import {SearchBar} from "../SearchBar/SearchBar";
 import {Playlist} from "../Playlist/Playlist";
 import {Spotify} from "../../util/Spotify";
 
+
 class App extends Component {
     constructor(props) {
         super(props);
@@ -20,7 +21,7 @@ class App extends Component {
         this.updatePlaylistName = this.updatePlaylistName.bind(this);
         this.savePlaylist = this.savePlaylist.bind(this);
         this.search = this.search.bind(this);
-        this.spotify = new Spotify();
+        Spotify.getAccessToken();
     }
 
     addTrack(track) {
@@ -40,12 +41,12 @@ class App extends Component {
 
     savePlaylist() {
         let trackURIs = this.state.playlistTracks.map(track => track.uri);
-        this.spotify.savePlaylist(this.state.playlistName, trackURIs);
+        Spotify.savePlaylist(this.state.playlistName, trackURIs);
         this.setState({ playlistName: 'New Playlist' });
     }
 
     search(searchTerm) {
-        this.setState({ searchResults: this.spotify.search(searchTerm) });
+        this.setState({ searchResults: Spotify.search(searchTerm) });
     }
 
   render() {
